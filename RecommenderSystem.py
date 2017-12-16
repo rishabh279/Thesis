@@ -4,7 +4,7 @@ Created on Fri Dec  1 09:07:25 2017
 
 @author: rishabh
 """
-
+'''
 import pandas as pd
 import numpy as np
 
@@ -68,7 +68,7 @@ def similarity(user1,user2):
       user1=np.array([user1[i] for i in commonItemIds])
       user2=np.array([user2[i] for i in commonItemIds])
       return correlation(user1,user2)
- 
+#print(userItemRatingMatrix.loc[1])
 #print(np.nanmean(userItemRatingMatrix.loc[5]))      
 def nearestNeighbourRatings(activeUser,k):
     similarityMatrix=pd.DataFrame(index=userItemRatingMatrix.index,columns=['Similarity'])
@@ -114,12 +114,48 @@ def topNRecommendations(activeUser,N):
     return list(topRecommendationTitles.title)  
 
 activeUser=5
-print(favoriteMovies(activeUser,2),"\nPredicted:-",topNRecommendations(activeUser,4))                                         
+#print(favoriteMovies(activeUser,2),"\nPredicted:-",topNRecommendations(activeUser,4))                                         
 data.loc[data.title=='Truth About Cats & Dogs, The (1996)']
 
+#------------------------------------Matrix Factorization---------------------------------------
 
-         
+def matrixFactorization(R,K,steps=10,gamma=0.001,lamda=0.002):    
+    
+    N=len(R.index)
+    M=len(R.columns)
+    
+    P=pd.DataFrame(np.random.rand(N,K),index=R.index)
+    Q=pd.DataFrame(np.random.rand(M,K),index=R.columns)
+    
+    for step in range(steps):
+        for i in R.index:
+            for j in R.columns:
+                if R.loc[i,j]>0:
+                   
+                    eij=R.loc[i,j]-np.dot(P.loc[i],Q.loc[j])
+                    
+                    P.loc[i]=P.loc[i]+gamma*(eij*Q.loc[j]-lamda*P.loc[i])
+                    Q.loc[i]=Q.loc[j]+gamma*(eij*P.loc[i]-lamda*Q.loc[j])
+                    
+        e=0
+        for i in R.index:
+            for j in R.columns: 
+                if R.loc[i,j]>0:
+                    e=e+pow(R.loc[i,j]-np.dot(P.loc[i],Q.loc[j]),2)+lamda*(pow(np.linalg.norm(P.loc[i]),2)+pow(np.linalg.norm(Q.loc[j]),2))
+        if e<0.001:
+            break
+        print(step)
+    return P,Q         
+
+(P,Q)=matrixFactorization(userItemRatingMatrix.iloc[:100,:100],K=2,gamma=0.001,lamda=0.02,steps=1)   
+
+activeUser=1
+predictItemRating=pd.DataFrame(np.dot(P.loc[activeUser],Q.T),index=Q.index,columns=['Rating'])
+topRecommendations=pd.DataFrame.sort_values(predictItemRating,['Rating'],ascending=[0])[:3]
+topRecommendationsTitles=movieInfo.loc[movieInfo.itemId.isin(topRecommendations.index)]
+print(list(topRecommendationsTitles.title))                                
 '''
+
 # -*- coding: utf-8 -*-
 """
 Created on Fri Dec  1 09:07:25 2017
@@ -180,7 +216,8 @@ def favoriteMovies(activeUser,N):
 userItemRatingMatrix=pd.pivot_table(data,values='rating',index=['userId'],columns=['itemId'])
 
 userItemRatingMatrix.head()
-
+print(np.array(userItemRatingMatrix.loc[5]))
+print(np.nanmean(userItemRatingMatrix.loc[5]))
 from scipy.spatial.distance import correlation
 def similarity(user1,user2):
     user1=np.array(user1)-np.nanmean(user1)
@@ -241,13 +278,48 @@ def topNRecommendations(activeUser,N):
     index=list(topRecommendationTitles.itemId)
     for i in index:
         print(data.loc[data.itemId==i])
-        data.loc[data.itemId==i].to_csv('C:/Users/rishabh/Desktop/Verification/myfile'+str(i)+'.csv')
+        #data.loc[data.itemId==i].to_csv('C:/Users/rishabh/Desktop/Verification/myfile'+str(i)+'.csv')
     #print(data.loc[data.itemId==111])
     #print(topRecommendationTitles.itemId)
     #topRecommendationTitles.title.to_csv('C:/Users/rishabh/Desktop/Verification/myfile2.csv')
     return list(topRecommendationTitles.title)  
 
 activeUser=5
-print(favoriteMovies(activeUser,2),"\nPredicted:-",topNRecommendations(activeUser,4))                                         
+#print(favoriteMovies(activeUser,2),"\nPredicted:-",topNRecommendations(activeUser,4))                                         
 #data.loc[data.title=='Truth About Cats & Dogs, The (1996)']
-'''
+
+def matrixFactorization(R,K,steps=10,gamma=0.001,lamda=0.002):    
+    
+    N=len(R.index)
+    M=len(R.columns)
+    
+    P=pd.DataFrame(np.random.rand(N,K),index=R.index)
+    Q=pd.DataFrame(np.random.rand(M,K),index=R.columns)
+    
+    for step in range(steps):
+        for i in R.index:
+            for j in R.columns:
+                if R.loc[i,j]>0:
+                   
+                    eij=R.loc[i,j]-np.dot(P.loc[i],Q.loc[j])
+                    
+                    P.loc[i]=P.loc[i]+gamma*(eij*Q.loc[j]-lamda*P.loc[i])
+                    Q.loc[i]=Q.loc[j]+gamma*(eij*P.loc[i]-lamda*Q.loc[j])
+                    
+        e=0
+        for i in R.index:
+            for j in R.columns: 
+                if R.loc[i,j]>0:
+                    e=e+pow(R.loc[i,j]-np.dot(P.loc[i],Q.loc[j]),2)+lamda*(pow(np.linalg.norm(P.loc[i]),2)+pow(np.linalg.norm(Q.loc[j]),2))
+        if e<0.001:
+            break
+        print(step)
+    return P,Q         
+
+(P,Q)=matrixFactorization(userItemRatingMatrix.iloc[:100,:100],K=2,gamma=0.001,lamda=0.02,steps=100)   
+
+activeUser=5
+predictItemRating=pd.DataFrame(np.dot(P.loc[activeUser],Q.T),index=Q.index,columns=['Rating'])
+topRecommendations=pd.DataFrame.sort_values(predictItemRating,['Rating'],ascending=[0])[:3]
+topRecommendationsTitles=movieInfo.loc[movieInfo.itemId.isin(topRecommendations.index)]
+print(list(topRecommendationsTitles.title))                                
