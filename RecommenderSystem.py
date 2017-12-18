@@ -285,7 +285,7 @@ def topNRecommendations(activeUser,N):
     return list(topRecommendationTitles.title)  
 
 activeUser=5
-#print(favoriteMovies(activeUser,2),"\nPredicted:-",topNRecommendations(activeUser,4))                                         
+print(favoriteMovies(activeUser,2),"\nPredicted:-",topNRecommendations(activeUser,4))                                         
 #data.loc[data.title=='Truth About Cats & Dogs, The (1996)']
 
 def matrixFactorization(R,K,steps=10,gamma=0.001,lamda=0.002):    
